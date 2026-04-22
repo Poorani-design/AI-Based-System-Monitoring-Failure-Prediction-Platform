@@ -1,0 +1,21 @@
+AI-Based System Monitoring & Failure Prediction Platform
+
+STEP 1:
+cd server
+npm init -y
+npm install express mongoose cors dotenv
+
+step 2: write .env and server.js make a connection between node js and mongo db.
+
+step 3: verify the testing. 
+	1. in vs terminal => mongoose db connected.
+	2. open chrome => http://localhost:3000/ => "API running"
+	3. then without chrome => open vs teerminal or cmd => curl http://localhost:3000/ => it will display status, status code and so many things.
+
+🔄 How They Work Together
+React (5173)
+     ↓ API call
+Node.js (3000)
+     ↓ DB query
+MongoDB (27017)
+

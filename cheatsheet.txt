@@ -1,0 +1,676 @@
+React (http://localhost:5173)
+        ↓  HTTP (fetch/axios)
+Node API (http://localhost:3000)
+        ↓  Mongoose
+MongoDB (mongodb://127.0.0.1:27017/ai-monitoring)
+
+===============================================
+Simulate CPU Spike (Very Important)
+// cpu-stress.js
+const stressCPU = () => {
+  const end = Date.now() + 5000; // run for 5 seconds
+
+  while (Date.now() < end) {
+    Math.sqrt(Math.random() * 1000000);
+  }
+
+  console.log("CPU spike simulated");
+};
+
+// run every 20 seconds
+setInterval(stressCPU, 20000);
+This will:
+
+Push CPU to high %
+Create realistic spikes
+
+=======================================
+Simulate Memory Spike
+// memory-stress.js
+let memoryHog = [];
+
+const stressMemory = () => {
+  memoryHog.push(new Array(10 * 1024 * 1024).fill("🔥")); // ~10MB
+
+  console.log("Memory usage increased:", memoryHog.length);
+};
+
+// run every 10 sec
+setInterval(stressMemory, 10000);
+
+👉 This will:
+
+Gradually increase memory usage
+Simulate memory leak
+==========================================
+Simulate Traffic Load (API Calls)
+const axios = require("axios");
+
+const simulateTraffic = async () => {
+  for (let i = 0; i < 50; i++) {
+    axios.get("http://localhost:3000/api/test");
+  }
+};
+
+setInterval(simulateTraffic, 5000);
+
+
+Request spikes
+CPU + memory load indirectly
+
+
+Combine with Real Metrics
+const si = require("systeminformation");
+
+setInterval(async () => {
+  const cpu = await si.currentLoad();
+  const memory = await si.mem();
+
+  console.log({
+    cpu: cpu.currentLoad,
+    memory: (memory.used / memory.total) * 100
+  });
+}, 2000);
+
+Even if only 1 user (you):
+
+CPU spikes → due to stress script
+Memory increases → due to allocation
+Traffic spikes → due to simulated requests
+
+👉 Now your dataset looks like real production
+
+
+if (Math.random() > 0.8) {
+  stressCPU();
+}
+
+👉 This creates:
+
+Unpredictable behavior
+Perfect for AI anomaly detection
+
+
+============================
+ai-system-monitoring/
+│
+├── client/                 # React Frontend
+├── server/                 # Node Backend
+├── README.md 
+
+
+===========================
+client/
+│
+├── public/
+│   └── index.html
+│
+├── src/
+│   ├── assets/             # images, icons
+│   ├── components/         # reusable UI components
+│   │   ├── Navbar.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── ChartCard.jsx
+│   │
+│   ├── pages/              # main screens
+│   │   ├── Login.jsx
+│   │   ├── Register.jsx
+│   │   ├── Dashboard.jsx
+│   │   ├── Alerts.jsx
+│   │
+│   ├── services/           # API calls
+│   │   └── api.js
+│   │
+│   ├── context/            # global state (auth)
+│   │   └── AuthContext.jsx
+│   │
+│   ├── hooks/              # custom hooks
+│   │   └── useMetrics.js
+│   │
+│   ├── utils/              # helper functions
+│   │   └── formatData.js
+│   │
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── routes.jsx
+│
+├── .env
+├── package.json
+
+🔑 Frontend Key Ideas
+services/api.js
+
+import axios from "axios";
+
+const API = axios.create({
+  baseURL: "http://localhost:3000"
+});
+
+export default API;
+
+======================
+hooks/useMetrics.js
+
+import { useEffect, useState } from "react";
+import API from "../services/api";
+
+export const useMetrics = () => {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const res = await API.get("/metrics");
+      setData(res.data);
+    };
+
+    fetchData();
+  }, []);
+
+  return data;
+};
+====================================
+BACKEND (Node.js + Express)
+
+server/
+│
+├── config/
+│   └── db.js               # MongoDB connection
+│
+├── controllers/            # logic layer
+│   ├── authController.js
+│   ├── metricController.js
+│
+├── models/                 # schemas
+│   ├── User.js
+│   ├── Metric.js
+│
+├── routes/                 # API routes
+│   ├── authRoutes.js
+│   ├── metricRoutes.js
+│
+├── middleware/             # auth & error handling
+│   ├── authMiddleware.js
+│
+├── services/               # AI logic / monitoring logic
+│   ├── predictionService.js
+│   ├── monitoringService.js
+│
+├── utils/
+│   ├── generateData.js     # simulated traffic
+│
+├── app.js                  # express app
+├── server.js               # entry point
+│
+├── .env
+├── package.json
+
+===============================
+🔌 Backend Important Files
+config/db.js
+
+const mongoose = require("mongoose");
+
+const connectDB = async () => {
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log("MongoDB connected");
+};
+
+module.exports = connectDB;
+
+
+📍 models/Metric.js
+const mongoose = require("mongoose");
+
+const metricSchema = new mongoose.Schema({
+  cpu: Number,
+  memory: Number,
+  traffic: Number,
+  timestamp: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+module.exports = mongoose.model("Metric", metricSchema);
+=================================
+📍 controllers/metricController.js
+
+const Metric = require("../models/Metric");
+
+exports.addMetric = async (req, res) => {
+  const metric = new Metric(req.body);
+  await metric.save();
+  res.json(metric);
+};
+
+exports.getMetrics = async (req, res) => {
+  const data = await Metric.find().sort({ timestamp: -1 }).limit(50);
+  res.json(data);
+};
+
+==================================
+📍 routes/metricRoutes.js
+const express = require("express");
+const router = express.Router();
+const { addMetric, getMetrics } = require("../controllers/metricController");
+
+router.post("/", addMetric);
+router.get("/", getMetrics);
+
+module.exports = router;
+
+==========================
+📍 services/predictionService.js (AI logic 🔥)
+exports.predictSpike = (data) => {
+  const avg = data.reduce((a, b) => a + b.cpu, 0) / data.length;
+  return avg * 1.2; // predicted spike
+};
+=============================
+📍 app.js
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.use("/metrics", require("./routes/metricRoutes"));
+
+module.exports = app;
+
+=======================
+📍 server.js
+require("dotenv").config();
+const app = require("./app");
+const connectDB = require("./config/db");
+
+connectDB();
+
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
+});
+
+
+==========================
+🔐 Authentication (Add This)
+Files:
+User.js
+authController.js
+authRoutes.js
+authMiddleware.js
+
+👉 Use:
+
+JWT
+bcrypt
+🌟 Final Flow
+React Dashboard
+      ↓
+API (Node.js)
+      ↓
+MongoDB
+      ↓
+Prediction Service (AI logic)
+🎯 Why This Structure is Important
+
+This shows:
+
+✅ Clean architecture
+✅ Separation of concerns
+✅ Scalable design
+✅ Real-world backend practices
+🚀 Next Step
+
+If you want, I can:
+
+Build full authentication (login/register code)
+Create React dashboard UI (charts + layout)
+Add real-time WebSocket updates
+Help you deploy this structure live
+
+Just tell me 👍
+==================================
+🧾 1) User Model
+📍 models/User.js
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  }
+});
+
+module.exports = mongoose.model("User", userSchema);
+
+=============================
+Auth Controller
+npm install bcryptjs jsonwebtoken
+
+
+controllers/authController.js
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+// REGISTER
+exports.register = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword
+    });
+
+    res.json({ message: "User registered successfully" });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+// LOGIN
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({ token, user: { id: user._id, name: user.name } });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+================
+3) Auth Routes
+📍 routes/authRoutes.js
+
+const express = require("express");
+const router = express.Router();
+const { register, login } = require("../controllers/authController");
+
+router.post("/register", register);
+router.post("/login", login);
+
+module.exports = router;
+
+
+===========================
+Auth Middleware (Protected Routes)
+middleware/authMiddleware.js
+
+
+const jwt = require("jsonwebtoken");
+
+module.exports = (req, res, next) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ message: "No token" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+
+=========================
+🔌 5) Connect Routes in App
+📍 app.js
+app.use("/auth", require("./routes/authRoutes"));
+
+========================
+🔐 6) Protect Your Metrics API
+const authMiddleware = require("../middleware/authMiddleware");
+
+router.get("/", authMiddleware, getMetrics);
+router.post("/", authMiddleware, addMetric);
+=============================
+client/src/
+├── pages/Login.jsx
+├── pages/Register.jsx
+├── context/AuthContext.jsx
+├── services/api.js
+
+========================
+services/api.js
+
+import axios from "axios";
+
+const API = axios.create({
+  baseURL: "http://localhost:3000"
+});
+
+API.interceptors.request.use((req) => {
+  const token = localStorage.getItem("token");
+  if (token) req.headers.Authorization = token;
+  return req;
+});
+
+export default API;
+================================
+🔐 2) Auth Context
+context/AuthContext.jsx
+
+import { createContext, useState } from "react";
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+
+  const login = (data) => {
+    localStorage.setItem("token", data.token);
+    setUser(data.user);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+========================
+📝 3) Register Page
+
+import { useState } from "react";
+import API from "../services/api";
+
+export default function Register() {
+  const [form, setForm] = useState({});
+
+  const handleSubmit = async () => {
+    await API.post("/auth/register", form);
+    alert("Registered!");
+  };
+
+  return (
+    <div>
+      <input placeholder="Name" onChange={e => setForm({...form, name: e.target.value})}/>
+      <input placeholder="Email" onChange={e => setForm({...form, email: e.target.value})}/>
+      <input type="password" placeholder="Password" onChange={e => setForm({...form, password: e.target.value})}/>
+      <button onClick={handleSubmit}>Register</button>
+    </div>
+  );
+}
+
+=============================
+🔑 4) Login Page
+
+import { useState, useContext } from "react";
+import API from "../services/api";
+import { AuthContext } from "../context/AuthContext";
+
+export default function Login() {
+  const [form, setForm] = useState({});
+  const { login } = useContext(AuthContext);
+
+  const handleSubmit = async () => {
+    const res = await API.post("/auth/login", form);
+    login(res.data);
+  };
+
+  return (
+    <div>
+      <input placeholder="Email" onChange={e => setForm({...form, email: e.target.value})}/>
+      <input type="password" placeholder="Password" onChange={e => setForm({...form, password: e.target.value})}/>
+      <button onClick={handleSubmit}>Login</button>
+    </div>
+  );
+}
+===============================
+🛡️ 5) Protected Route (Simple)
+
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+
+export default function Protected({ children }) {
+  const { user } = useContext(AuthContext);
+
+  if (!user) return <h2>Unauthorized</h2>;
+
+  return children;
+}
+========================================
+
+
+🔧 How to Add Role (Simple)
+1. Update User Model
+role: {
+  type: String,
+  enum: ["user", "admin"],
+  default: "user"
+}
+
+2. Add Role in JWT
+
+const token = jwt.sign(
+  { userId: user._id, role: user.role },
+  process.env.JWT_SECRET
+);
+
+==================
+3. Create Admin Middleware
+module.exports = (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+  next();
+};
+
+======================
+4. Protect Admin Routes
+router.get("/admin-data", authMiddleware, adminMiddleware, getAllData);
+
+
+
+Goal for Today
+
+👉 You should be able to:
+
+Run backend ✅
+Connect to MongoDB ✅
+Register/Login user ✅
+Store & fetch metrics ✅
+Test APIs (Postman) ✅
+🧱 1. Install Required Tools
+✅ Must have:
+Node.js (LTS)
+MongoDB Community Edition OR MongoDB Atlas
+Visual Studio Code
+Postman
+
+Create Project Structure
+ai-system-monitoring/
+  server/
+  client/   (optional for today)
+
+========================
+3. Backend Setup
+cd server
+npm init -y
+npm install express mongoose cors dotenv bcryptjs jsonwebtoken systeminformation
+
+==========================
+📄 4. Create Basic Files
+server/
+├── server.js
+├── app.js
+├── config/db.js
+├── models/User.js
+├── models/Metric.js
+├── routes/authRoutes.js
+├── routes/metricRoutes.js
+├── controllers/authController.js
+├── controllers/metricController.js
+├── middleware/authMiddleware.js
+├── .env
+=====================================
+🔐 5. Environment File
+PORT=3000
+MONGO_URI=mongodb://127.0.0.1:27017/ai-monitoring
+JWT_SECRET=supersecret
+====================
+🔌 6. Start MongoDB
+
+mongosh
+============================
+🚀 7. Run Backend
+node server.js
+==========================
+
+
+🚀 Best Practice (Industry Style)
+
+Use config like:
+
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ai-monitoring";
+👉 Works both:
+
+Local
+Cloud
+
+==============================
+SOCKET IO:
+	npm install socket.io

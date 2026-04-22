@@ -7,6 +7,7 @@ An AI-powered system monitoring platform that tracks CPU usage, memory consumpti
 This project demonstrates full-stack development, API design, and basic AI-based anomaly detection.
 
 🎯 Features
+
       📊 Real-time CPU, memory, and traffic monitoring
       🤖 AI-based anomaly detection & prediction
       🔐 Secure authentication (JWT)
@@ -15,10 +16,12 @@ This project demonstrates full-stack development, API design, and basic AI-based
       🗄️ MongoDB data storage
       
 🧠 AI Prediction Logic
+
       Moving average / threshold-based detection
       Identifies abnormal spikes
       Predicts potential system overloads
 🛠️ Tech Stack
+
       Layer	Technology
       Frontend	React, Axios
       Backend	Node.js, Express
