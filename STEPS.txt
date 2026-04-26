@@ -3,7 +3,7 @@ AI-Based System Monitoring & Failure Prediction Platform
 STEP 1:
 cd server
 npm init -y
-npm install express mongoose cors dotenv
+npm install express mongoose cors dotenv socket.io
 
 step 2: write .env and server.js make a connection between node js and mongo db.
 
@@ -18,4 +18,55 @@ React (5173)
 Node.js (3000)
      ↓ DB query
 MongoDB (27017)
+
+
+===========================
+GIT VERSION CONTROL COMMAND LINE
+1. git branch -a // to list a branches
+2. git init
+3. git remote add origin "url"
+4. git add .
+5. git push origin main // to push our code in main. 
+	what if [rejected] main -> main (fetch first)
+6. git push --set-upstream origin main // To push the current branch and set the remote as upstream, use
+
+	so avoid this issue
+
+	git pull --rebase origin main
+	git push origin main [rejected main-> main (non-fast-forward)
+	to check use git status
+>>>> git status
+interactive rebase in progress; onto 55459b0
+Last command done (1 command done):
+   pick f1d52c3 CPU usuage calculated, get memory and performance
+No commands remaining.
+You are currently editing a commit while rebasing branch 'main' on '55459b0'.
+  (use "git commit --amend" to amend the current commit)
+  (use "git rebase --continue" once you are satisfied with your changes)
+
+$ git commit --amend --no-edit
+[detached HEAD d97cf8b] Update README.md
+ Author: POORANI GUNASEKAREN <arulpoorani88@gmail.com>
+ Date: Wed Apr 22 14:46:24 2026 +0530
+ 1676 files changed, 336239 insertions(+)
+
+Lenovo@Poorani MINGW64 /d/4_POORANI_LATEST_PORTFOLIO/system montioring (main|REBASE 1/1)
+$ git rebase --continue
+Successfully rebased and updated refs/heads/main.
+
+Lenovo@Poorani MINGW64 /d/4_POORANI_LATEST_PORTFOLIO/system montioring (main)
+$ git push -u origin main --force-with-lease
+//with force to push 
+Enumerating objects: 1907, done.
+Counting objects: 100% (1907/1907), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (1820/1820), done.
+Writing objects: 100% (1905/1905), 3.01 MiB | 1.28 MiB/s, done.
+Total 1905 (delta 215), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (215/215), completed with 1 local object.
+To https://github.com/Poorani-design/AI-Based-System-Monitoring-Failure-Prediction-Platform.git
+ + 55459b0...5651905 main -> main (forced update)
+branch 'main' set up to track 'origin/main'.
+
+
 
