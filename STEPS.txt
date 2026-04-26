@@ -3,7 +3,7 @@ AI-Based System Monitoring & Failure Prediction Platform
 STEP 1:
 cd server
 npm init -y
-npm install express mongoose cors dotenv
+npm install express mongoose cors dotenv socket.io
 
 step 2: write .env and server.js make a connection between node js and mongo db.
 
