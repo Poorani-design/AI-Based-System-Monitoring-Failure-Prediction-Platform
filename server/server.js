@@ -3,113 +3,177 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const app = express();
+const http = require("http");
+const { Server } = require("socket.io");
+const si = require("systeminformation");
 const os = require("os");
-const platform = os.platform();
-const type = os.type();
-const release = os.release();
-const arch = os.arch();
-const totalMemory = os.totalmem();
-const freeMemory = os.freemem();
-const cpuInfo = os.cpus();
-const hostname = os.hostname();
-const uptime = os.uptime();
-const loadAverage = os.loadavg();
-const cpuUsage = os.loadavg()[0] / os.cpus().length; // Approximate CPU usage based on load average and number of CPUs
-const getNetworkInterfaces = os.networkInterfaces();
 
-console.log(`Platform: ${platform}`);
-console.log(`OS Type: ${type}`);
-console.log(`OS Release: ${release}`);
-console.log(`CPU Architecture: ${arch}`);
-console.log(
-  `Total Memory: ${(totalMemory / 1024 / 1024 / 1024).toFixed(2)} GB`,
-);
-console.log(`Free Memory: ${(freeMemory / 1024 / 1024 / 1024).toFixed(2)} GB`);
-console.log(`Hostname: ${hostname}`);
-console.log(`Uptime: ${uptime} seconds`);
-console.log(`Load Average: ${loadAverage}`);
-console.log(`CPU Info: ${JSON.stringify(cpuInfo[0]["model"])}`);
-console.log(`CPU Usage: ${(cpuUsage * 100).toFixed(2)}%`);
-// console.log(`Network Interfaces: ${JSON.stringify(getNetworkInterfaces)}`);
-
-// middlewares //handle routing - decide which code run when a user visits
 app.use(cors());
-// CORS - CROSS ORIGIN RESOURCE SHARING - security feature implemented by browsers to restrict web pages from making requests to a different domain than the one that served the web page.
-// //It's okay I trust this server, so I allow it to access my resources.
-
-app.use(express.json()); // to understand JSON data sent in request body
-
-// DB connection
+app.use(express.json());
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("Mongoose connected!"))
+  .then(() => console.log("mongoose conencted"))
   .catch((error) => console.log(error));
-
 //API endpoint
 app.get("/", (req, res) => {
   res.send("API TEST RUNNING");
 });
 
-// start server
-app.listen(process.env.PORT, () => {
-  console.log("server running on port" + process.env.PORT);
+function getCPUUsage() {
+  return new Promise((resolve) => {
+    const startMeasure = os.cpus();
+    setTimeout(() => {
+      const endMeasure = os.cpus();
+
+      let idleDiff = 0;
+      let totalDiff = 0;
+
+      for (let i = 0; i < startMeasure.length; i++) {
+        const start = startMeasure[i].times;
+        const end = endMeasure[i].times;
+
+        const startTotal =
+          start.user + start.nice + start.sys + start.idle + start.irq;
+
+        const endTotal = end.user + end.nice + end.sys + end.idle + end.irq;
+
+        idleDiff += end.idle - start.idle;
+        totalDiff += endTotal - startTotal;
+      }
+
+      const percentage = 100 - (100 * idleDiff) / totalDiff;
+      resolve(percentage.toFixed(2));
+    }, 100);
+  });
+}
+// create server + socket
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" },
+  methods: ["GET", "POST"],
 });
 
+async function getNetworkSpeed() {
+    const stats = await si.networkStats();
+  const initialStats = await si.networkStats();
 
-function getCPUUsage() {
-  const startMeasure = os.cpus();
-  console.log("start measure", startMeasure);
-  // Wait for 1 second to calculate the average usage over that time
-  setTimeout(() => {
-    const endMeasure = os.cpus();
-    
-    let idleDifference = 0;
-    let totalDifference = 0;
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-    for (let i = 0; i < startMeasure.length; i++) {
-      const startIdle = startMeasure[i].times.idle;
-      const endIdle = endMeasure[i].times.idle;
-      
-      const startTotal = startMeasure[i].times.user + startMeasure[i].times.nice + startMeasure[i].times.sys + startMeasure[i].times.idle + startMeasure[i].times.irq;
-      const endTotal = endMeasure[i].times.user + endMeasure[i].times.nice + endMeasure[i].times.sys + endMeasure[i].times.idle + endMeasure[i].times.irq;
+  const finalStats = await si.networkStats();
+  const downloadSpeed =
+    (finalStats[0].rx_bytes - initialStats[0].rx_bytes) / 1024; // KB/s
+  const uploadSpeed =
+    (finalStats[0].tx_bytes - initialStats[0].tx_bytes) / 1024; // KB/s
 
-      idleDifference += endIdle - startIdle;
-      totalDifference += endTotal - startTotal;
-    }
-
-    const percentage = 100 - (100 * idleDifference / totalDifference);
-    console.log(`Approximate CPU Usage: ${percentage.toFixed(2)}%`);
-  }, 1000);
+  return {
+    downloadSpeed: downloadSpeed.toFixed(2),
+    uploadSpeed: uploadSpeed.toFixed(2),
+  };
 }
+// socket streaming
+// io.on("connection", (socket) => {
+//   console.log("client connected", socket.id);
+//     let isRunning = false;
+//   const interval = setInterval(async () => {
+//     if(isRunning) return;
+//     isRunning = true;
+//     const cpu = await getCPUUsage();
 
-getCPUUsage();
+//     try {
+//       socket.emit("metrics", {
+//         cpu: cpu,
+//         totalMemory: os.totalmem(),
+//         freeMemory: os.freemem(),
+//       });
+//       console.log("Emitted metrics:", {
+//         cpu: cpu,
+//         totalMemory: os.totalmem(),
+//         freeMemory: os.freemem(),
+//         usedMemory: os.totalmem() - os.freemem(),
+//         memoryUsage: (
+//           ((os.totalmem() - os.freemem()) / os.totalmem()) *
+//           100
+//         ).toFixed(2)
+//       });
+//     } catch (err) {
+//       console.log("Error emitting metrics:", err);
+//     }
+//     isRunning = false;
+//   }, 5000);
 
-//METRICS ENDPOINT - to provide data for the dashboard
-app.get("/metrics", (req, res) => {
+//     socket.on("disconnect", () => {
+//       clearInterval(interval);
+//       console.log("client disconnected", socket.id);
+//     });
+// });
+
+io.on("connection", (socket) => {
+  // console.log("client connected", socket.id);
+
+  let isActive = true;
+
+  socket.on("disconnect", () => {
+    isActive = false;
+    console.log("client disconnected", socket.id);
+  });
+
+  async function streamMetrics() {
+    while (isActive) {
+      const [cpu, network] = await Promise.all([
+        getCPUUsage(),
+        getNetworkSpeed(),
+      ]);
+
+      socket.emit("metrics", {
+        cpu: cpu,
+        totalMemory: Number((os.totalmem() / 1024 / 1024 / 1024).toFixed(2)), // Convert to GB
+        freeMemory: Number((os.freemem() / 1024 / 1024 / 1024).toFixed(2)),
+        usedMemory: Number(
+          ((os.totalmem() - os.freemem()) / 1024 / 1024 / 1024).toFixed(2),
+        ),
+        memoryUsage: (
+          ((os.totalmem() - os.freemem()) / os.totalmem()) *
+          100
+        ).toFixed(2),
+        downloadSpeed: network.downloadSpeed,
+        uploadSpeed: network.uploadSpeed,
+      });
+
+      console.log("Emitted metrics");
+
+      // wait 1 sec before next loop
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  streamMetrics();
+});
+
+server.listen(5000, () => {
+  console.log("Server running on port 5000");
+});
+
+app.get("/details", async (req, res) => {
   res.json([
     {
-      cpuUsage: cpuUsage,
-      totalMemory: totalMemory,
-      freeMemory: freeMemory,
-      loadAverage: loadAverage,
-      uptime: uptime,
-      hostname: hostname,
-      platform: platform,
-      type: type,
-      release: release,
-      arch: arch,
-      cpuInfo: cpuInfo[0]["model"],
-      networkInterfaces: getNetworkInterfaces,
+      type: os.type(),
+      hostname: os.hostname(),
+      arch: os.arch(),
+      uptime: os.uptime(),
+      cpus: os.cpus(),
+      loadavg: os.loadavg(),
+      networkInterfaces: os.networkInterfaces(),
+      userInfo: os.userInfo(),
+      release: os.release(),
+      platform: os.platform(),
+      type: os.type(),
+      hostname: os.hostname(),
+      arch: os.arch(),
+      uptime: os.uptime(),
+      cpus: os.cpus(),
+      loadavg: os.loadavg(),
+      networkInterfaces: os.networkInterfaces(),
+      userInfo: os.userInfo(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
   ]);
 });
-
-console.log(os.platform());
-
-const http = require("http");
-const {Server} = require('socket.io');
-const server= http.createServer(app);
-
-const io = new Server(server, {
-  cors :{origin: "*"}
-})

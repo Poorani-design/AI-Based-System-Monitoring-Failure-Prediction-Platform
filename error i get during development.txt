@@ -1,0 +1,154 @@
+error i got while development. 
+
+1. (node:1212) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 disconnect listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+
+Meaning : MaxListenersExceededWarning: Possible EventEmitter memory leak detected
+Reasons to get this error:
+Node.js allows max 10 listeners per event (like "disconnect")
+You added 11+ listeners to the same socket
+This usually means you are attaching listeners repeatedly (memory leak risk)
+
+ // ✅ Attach ONCE (not inside interval) before I added inside interval. 
+socket.on() → should be registered once per connection
+setInterval() → runs repeatedly
+❌ Never put .on() inside loops, intervals, or repeated functions
+
+  socket.on("disconnect", () => {
+    clearInterval(interval);
+    console.log("client disconnected", socket.id);
+  });
+
+🎯 Summary
+You were adding disconnect listener inside interval
+That created multiple listeners → memory leak warning
+Fix = move listener outside interval
+
+
+
+
+BONUS IMPROVEMENT: TO AVOID CPU SPIKE
+your confusion is about why that isRunning logic is needed when you already added await. Let’s make it very clear.
+
+🧠 What you think is happening
+
+You wrote:
+
+setInterval(async () => {
+  const cpu = await getCPUUsage();
+}, 5000);
+
+You might expect:
+
+“Next interval waits until await finishes”
+
+❌ That’s not how setInterval works
+
+💥 What actually happens
+setInterval runs every 5 seconds no matter what
+Your getCPUUsage() itself has a 5-second delay inside
+
+👉 So timeline looks like this:
+
+t = 0s   → interval starts → CPU calc starts (5s delay)
+t = 5s   → interval fires AGAIN → another CPU calc starts
+t = 10s  → another one starts...
+
+🔥 Now multiple executions are running at the same time
+
+⚠️ Why this is bad
+Overlapping executions
+Increased CPU usage
+Memory pressure
+In real apps → unstable metrics
+✅ What isRunning fixes
+let isRunning = false;
+
+const interval = setInterval(async () => {
+  if (isRunning) return;   // ⛔ skip if previous not finished
+
+  isRunning = true;
+
+  const cpu = await getCPUUsage();
+
+  socket.emit("metrics", { cpu });
+
+  isRunning = false;
+}, 5000);
+🔍 Step-by-step behavior now
+t = 0s   → run starts → isRunning = true
+t = 5s   → interval fires → but isRunning = true → ❌ skipped
+t = ~5s  → first finishes → isRunning = false
+t = 10s  → next run allowed ✅
+
+👉 Only one execution at a time
+
+🎯 Simple analogy
+
+Think of it like:
+
+Without isRunning → 🚪 door always open → people keep entering → crowd (problem)
+With isRunning → 🚦 traffic signal → one batch at a time → controlled
+
+================================================
+
+Better alternative (even cleaner than isRunning)
+
+If you want perfect control, don’t use setInterval at all:
+
+async function sendMetrics() {
+  while (true) {
+    const cpu = await getCPUUsage();
+
+    socket.emit("metrics", { cpu });
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+}
+
+sendMetrics();
+
+🎯 Final takeaway
+await does NOT pause setInterval
+Multiple async executions can overlap
+isRunning = prevents overlap
+Best solution = controlled loop (while + await)
+
+MY OLD CODE FOR REFERENCE:
+// socket streaming
+io.on("connection", (socket) => {
+  console.log("client connected", socket.id);
+    let isRunning = false;
+  const interval = setInterval(async () => {
+    if(isRunning) return;
+    isRunning = true;
+    const cpu = await getCPUUsage();
+
+    try {
+      socket.emit("metrics", {
+        cpu: cpu,
+        totalMemory: os.totalmem(),
+        freeMemory: os.freemem(),
+      });
+    
+    } catch (err) {
+      console.log("Error emitting metrics:", err);
+    }
+    isRunning = false;
+  }, 5000);
+  
+    socket.on("disconnect", () => {
+      clearInterval(interval);
+      console.log("client disconnected", socket.id);
+    });
+});
+
+
+🧠 How network speed is calculated
+
+👉 Same idea as CPU:
+
+speed = (bytes_now - bytes_before) / time
+Measure total bytes sent/received
+Wait some time (e.g., 1 second)
+Measure again
+Find difference → that’s speed

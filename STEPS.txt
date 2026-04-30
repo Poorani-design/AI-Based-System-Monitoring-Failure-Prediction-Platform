@@ -68,5 +68,29 @@ To https://github.com/Poorani-design/AI-Based-System-Monitoring-Failure-Predicti
  + 55459b0...5651905 main -> main (forced update)
 branch 'main' set up to track 'origin/main'.
 
+INSTALLING REACT ICONS
+npm install react-icons --save
+
+
+install system information // bcz os does not provide network speed
+npm install systeminformation
+
+const si = require("systeminformation");
+
+async function getNetworkSpeed() {
+  const stats1 = await si.networkStats();
+  
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  const stats2 = await si.networkStats();
+
+  const rxBytes = stats2[0].rx_bytes - stats1[0].rx_bytes;
+  const txBytes = stats2[0].tx_bytes - stats1[0].tx_bytes;
+
+  return {
+    download: (rxBytes / 1024).toFixed(2), // KB/s
+    upload: (txBytes / 1024).toFixed(2),   // KB/s
+  };
+}
 
 
