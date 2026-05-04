@@ -93,4 +93,25 @@ async function getNetworkSpeed() {
   };
 }
 
+//MEMORY FINDER USING IN CLI
+node --expose-gc server.js
+
+You cannot fully “clear memory leaks manually” in Node.
+
+👉 You can only:
+
+Detect patterns
+Reduce allocations
+Trigger GC
+
+If leak is from:
+
+event listeners
+sockets not cleared
+DB connections
+
+👉 GC will NOT fix it.
+
+
+
 

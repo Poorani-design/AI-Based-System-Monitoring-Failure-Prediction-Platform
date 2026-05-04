@@ -1,0 +1,9 @@
+will  Use PM2 (auto restart on memory limit)
+Think of it like a smart supervisor for your server:
+
+Keeps your app always running
+Restarts automatically if it crashes
+Can restart based on memory usage (your use case)
+Runs your app in background (daemon)
+Provides logs, monitoring, clustering
+
