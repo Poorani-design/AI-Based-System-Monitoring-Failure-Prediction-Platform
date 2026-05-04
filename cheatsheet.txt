@@ -674,3 +674,56 @@ Cloud
 ==============================
 SOCKET IO:
 	npm install socket.io
+===========
+cpu.times = {
+  user:   time running user code
+  nice:   time running low-priority processes
+  sys:    time running system/kernel code
+  idle:   time doing nothing
+  irq:    time handling interrupts
+}
+These values are cumulative counters (they keep increasing since system start).
+CPU usage is calculated using:
+
+How much time was NOT idle during a time interval
+Step-by-Step Logic
+1. Take snapshot at time T1
+const startMeasure = os.cpus();
+2. Take snapshot at time T2 (after 1 second)
+const endMeasure = os.cpus();
+3. For each CPU core:
+Total Time
+total = user + nice + sys + idle + irq
+Idle Time
+idle = idle
+4. Compute Differences
+idleDifference = endIdle - startIdle
+totalDifference = endTotal - startTotal
+5. Final Formula
+
+CPU Usage %=100×(1−
+Δtotal
+Δidle
+	​
+
+)
+
+🔍 Why This Works
+totalDifference = total time passed
+idleDifference = time CPU did nothing
+So:
+active time = total - idle
+👉 Percentage:
+(active / total) * 100
+
+🧪 Example
+Metric	Value
+Total Diff	100
+Idle Diff	30
+CPU Usage = 100 - (30/100 * 100)
+          = 70%
+
+
+
+
+

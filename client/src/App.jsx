@@ -1,57 +1,65 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import "./App.css";
+import io from "socket.io-client";
+import Dashboard from "./Pages/Dashboard";
+import Layout from "./Components/Layout/Layout";
+
+const socket = io("http://localhost:5000", {
+  transports: ["websocket"],
+  interval: 2000,
+});
 
 function App() {
-  let localURL = "http://localhost:3000";
-  const [metrics, setMetrics] = useState([
-    {
-      cpuUsage: 0,
-      totalMemory: 0,
-      freeMemory: 0,
-      loadAverage: [0, 0, 0],
-      hostname: "",
-      platform: "",
-      release: "",
-      type: "",
-      arch: "",
-      cpuInfo: [],
+  const [setMetrics] = useState({
+    cpuUsage: 0,
+    totalMemory: 0,
+    freeMemory: 0,
+    loadAverage: [0, 0, 0],
+    hostname: "",
+    platform: "",
+    release: "",
+    type: "",
+    arch: "",
+    cpuInfo: [],
+  });
 
-    },
-  ]);
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const response = await axios.get(`${localURL}/metrics`);
-        setMetrics(response.data);
-        console.log('fetch updated!')
-      } catch (error) {
-        console.error("Error fetching metrics: ", error);
-      }
-    };
-    fetchMetrics();
+    socket.on("connect", () => {
+      // console.log("Connected:", socket.id);
+    });
+    setInterval(() => {
+      socket.on("cpu", (data) => {
+        // console.log("Connected:", socket.id);
+        // console.log("current data", data);
+        setMetrics(data);
+      });
+    }, 5000);
 
-    const interval = setInterval(fetchMetrics, 1000);
-    return () => clearInterval(interval);
+    socket.on("connect_error", (err) => {
+      console.error("Connection error:", err.message);
+    });
+
+    return () => {
+      socket.off("cpu");
+      socket.off("connect");
+      socket.off("connect_error");
+    };
   }, []);
+
   return (
     <>
-      {metrics.map((item, index) => (
-        <div
-          key={index}
-          style={{ border: "1px solid gray", margin: "10px", padding: "10px" }}
-        >
-          <p>CPU: {item.cpuUsage}%</p>
-          <p>Memory: {(item.totalMemory /1024/1024/1024).toFixed(2) } GB</p>
-          <p>Free Memory: {(item.freeMemory /1024/1024/1024).toFixed(2) } GB</p>
-          <p>Hostname : {item.hostname} </p>
-          <p>Platform: {item.platform}</p>
-          <p>Release : {item.release}</p>
-          <p>Architecture : {item.arch}</p>
-          <p>Load Average: {item.loadAverage.join(", ")}</p>
-       
-        </div>
-      ))}
+      <Layout>
+        <Dashboard />
+      </Layout>
+
+      {/* <h2>CPU USAGE : {metrics.cpu}</h2> */}
+      {/* <h2>Free Memory USAGE : {metrics.freeMemory} MB</h2>
+      <h2>Total Memory USAGE : {metrics.totalMemory} MB</h2>
+      <h2>Hostname : {metrics.hostname} </h2>
+      <h2>Platform: {metrics.platform}</h2>
+      <h2>Release : {metrics.release}</h2>
+      <h2>Architecture : {metrics.arch}</h2> */}
     </>
   );
 }
