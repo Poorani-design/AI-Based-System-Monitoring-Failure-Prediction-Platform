@@ -1,120 +1,50 @@
 import React from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
-import { FiCpu } from "react-icons/fi";
-import { GrMemory } from "react-icons/gr";
-import { MdSdStorage } from "react-icons/md";
-import { LiaSpaceShuttleSolid } from "react-icons/lia";
-import { GiFocusedLightning } from "react-icons/gi";
-import { MdNetworkCheck } from "react-icons/md";
+
 import { GoAlertFill } from "react-icons/go";
-import { IoSpeedometer } from "react-icons/io5";
 import { IoNotificationsSharp } from "react-icons/io5";
 import { FcSalesPerformance } from "react-icons/fc";
 import { GrOverview } from "react-icons/gr";
-
-
+import { DASHBOARD_CARDS } from "../constants/metricsData";
+import Card from "../Components/Common/Card";
 // import Layout from '../Components/Layout'
 
 const Dashboard = () => {
   const REACT_APP_API_URL =
     import.meta.env.REACT_APP_API_URL || "http://localhost:5000";
-  const socket = io(REACT_APP_API_URL); // Replace with your actual local URL
-  const cards = [
-    {
-      name: "cpu",
-      title: "CPU Usage",
-      icon: <FiCpu className="color-cpu" />,
-      data: "cpu",
-    },
-    {
-      name: "totalMemory",
-      title: "Total Memory",
-      icon: <GrMemory className="color-memory" />,
-      data: "totalMemory",
-    },
-    {
-      name: "usedMemory",
-      title: "Used Memory",
-      icon: <GiFocusedLightning className="color-memory" />,
-      data: "usedMemory",
-    },
-    {
-      name: "freeMemory",
-      title: "Free Memory",
-      icon: <LiaSpaceShuttleSolid className="color-free" />,
-      data: "freeMemory",
-    },
-    {
-      name: "memoryUsage",
-      title: "Memory Usage",
-      icon: <MdSdStorage className="color-usage" />,
-      data: "usageMemory",
-    },
-    {
-      name: "downloadSpeed",
-      title: "N/W Download",
-      icon: <MdNetworkCheck className="color-network" />,
-      data: "downloadSpeed",
-    },
-    {
-      name: "uploadSpeed",
-      title: "N/W Upload",
-      icon: <IoSpeedometer className="text-green-500" />,
-      data: "uploadSpeed",
-    },
-  ];
+
   const [metrics, setMetrics] = React.useState({});
   const [details, setDetails] = React.useState({});
+  const socketRef = React.useRef(null);
 
   React.useEffect(() => {
-    socket.on("metrics", (data) => {
-      console.log("LIVE:", data);
-      setMetrics(data);
-    });
-
-    return () => {
-      socket.off("metrics");
-    };
+    socketRef.current = io(REACT_APP_API_URL);
+    socketRef.current.on("metrics", setMetrics);
+    return () => socketRef.current.disconnect();
   }, []);
 
   React.useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_API_URL}/details`)
+      .get(`${import.meta.env.VITE_API_URL}/api/metrics`)
       .then((res) => setDetails(res.data[0]))
       .catch(console.error);
   }, []);
 
   return (
     <>
-      <div className="dashboard-content px-3 w-12/12">
-        <div className="content flex flex-col sm:flex-row lg:flex-row gap-3 my-2">
-          {cards.map((card) => {
+      <div className="dashboard-content px-3">
+        <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-7 gap-3 w-full">
+          {DASHBOARD_CARDS.map((card) => {
             return (
-              <div
+              <Card
                 key={card.name}
-                className="card w-full sm:w-2/4 md:w-1/4 flex flex-col"
-              >
-                <div className="title flex align-center content-center gap-3 items-center">
-                  <div className="text-xl">{card.icon}</div>
-                  <div className=""> {card.title}</div>
-                </div>
-                <div className="text-lg font-bold py-1">
-                  {metrics[card.data] || 0}
-                  {card.name === "cpu" || card.name === "memoryUsage"
-                    ? " %"
-                    : card.name.includes("Memory")
-                      ? " GB"
-                      : " KB/s"}
-                </div>
-                <div className="flex justify-between">
-                  {" "}
-                  <div className="text-gray-500">
-                    {/* <span className="text-green-500">12%</span>  */}
-                    updated now..
-                  </div>
-                </div>
-              </div>
+                title={card.title}
+                icon={card.icon}
+                value={metrics[card.name]}
+                unit={card.unit}
+                colorName={card.colorName}
+              />
             );
           })}
         </div>
@@ -193,9 +123,7 @@ const Dashboard = () => {
                   </div>
                   <div>System Overview</div>
                 </div>
-                <div>
-                some information
-                </div>
+                <div>some information</div>
               </div>
             </div>
           </div>

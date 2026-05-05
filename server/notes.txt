@@ -7,3 +7,63 @@ Can restart based on memory usage (your use case)
 Runs your app in background (daemon)
 Provides logs, monitoring, clustering
 
+
+BACKEND STRUCTURE
+
+server/
+│
+├── server.js          ← app entry (ONLY setup)
+├── config/
+│   └── db.js          ← Mongo connection
+│
+├── models/
+│   └── Metrics.js     ← your schema
+│
+├── controllers/
+│   └── metricsController.js  ← all queries here ✅
+│
+├── routes/
+│   └── metricsRoutes.js      ← API endpoints
+│
+├── services/ (optional )
+│   └── metricsService.js     ← business logic / AI
+
+MongoDB operators (important)
+Operator	Meaning
+$gt	greater than
+$gte	greater than or equal
+$lt	less than
+$lte	less than or equal
+
+What is .sort({ timestamp: 1 }) ?
+
+👉 Sorts data based on time
+
+Values:
+Value	Meaning
+1	Ascending (old → new)
+-1	Descending (new → old)
+👉 Oldest first → good for charts 📈
+👉 Latest first → good for alerts 🚨
+  res.json(data); //Sends data back to frontend (React)
+
+
+  ⚡ Quick recap
+Concept	Meaning
+Date.now()	current time
+60*60*1000	1 hour in ms
+$gte	>= condition
+.sort({ timestamp: 1 })	oldest → newest
+
+================= SIMPLE RULE ======================
+
+| File        | Responsibility |
+| ----------- | -------------- |
+| server.js   | start app      |
+| routes      | define APIs    |
+| controllers | DB queries     |
+| services    | logic / AI     |
+| models      | schema         |
+
+
+

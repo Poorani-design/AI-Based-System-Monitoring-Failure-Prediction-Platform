@@ -7,10 +7,12 @@ const { Server } = require("socket.io");
 const si = require("systeminformation");
 const os = require("os");
 const Metrics = require("./Models/metrics");
+const metricRoutes = require("./Routes/metricRoutes");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/',metricRoutes);
 
 /* ===========================
    ✅ MONGODB CONNECTION
@@ -26,6 +28,7 @@ mongoose
 app.get("/", (req, res) => {
   res.send("API TEST RUNNING");
 });
+
 
 /* ===========================
    ✅ CPU USAGE

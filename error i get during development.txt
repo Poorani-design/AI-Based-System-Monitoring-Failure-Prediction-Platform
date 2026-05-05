@@ -152,3 +152,23 @@ Measure total bytes sent/received
 Wait some time (e.g., 1 second)
 Measure again
 Find difference → that’s speed
+
+
+
+connect ECONNREFUSED 127.0.0.1:27017, connect ECONNREFUSED ::1:27017
+Meaning: Mongo trying to connect with this port, but nothing to listen
+
+common fix: terminal --> 
+	>>mongod
+	>>net start MongoDB #ONLY FOR WINDOWS
+
+step 2: check the connection string
+	MONGO_URI=mongodb://127.0.0.1:27017/ai-monitoring
+
+
+Quick Debug Checklist
+ MongoDB running?
+ Correct MONGO_URI?
+ .env loaded (require('dotenv').config())?
+ Internet working (if using Atlas)?
+ IP whitelisted (for Atlas)?
