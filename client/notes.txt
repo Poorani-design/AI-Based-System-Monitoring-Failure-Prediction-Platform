@@ -1,0 +1,37 @@
+src/
+│
+├── components/
+│   ├── charts/
+│   │   ├── PerformanceChart.jsx
+│   │   ├── NetworkChart.jsx
+│   │   └── MiniChart.jsx
+│   │
+│   ├── cards/
+│   │   ├── MetricCard.jsx
+│   │   └── AnomalyBadge.jsx
+│   │
+│   └── layout/
+│       ├── DashboardLayout.jsx
+│       ├── Sidebar.jsx
+│       └── Header.jsx
+│
+├── pages/
+│   └── Dashboard.jsx
+│
+├── services/
+│   ├── api.js
+│   └── socket.js
+│
+├── hooks/
+│   ├── useMetrics.js
+│   └── useSocket.js
+│
+├── utils/
+│   ├── formatTime.js
+│   └── anomaly.js
+│
+├── styles/
+│   └── globals.css
+│
+├── App.jsx
+└── main.jsx

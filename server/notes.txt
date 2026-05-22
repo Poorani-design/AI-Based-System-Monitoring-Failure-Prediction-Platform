@@ -67,3 +67,21 @@ $gte	>= condition
 
 
 
+============================
+Backend only we are using socket because of this 
+If Detection Happens in Frontend
+
+Problems:
+
+Problem	Reason
+Every user recalculates	Wasteful
+Different results	Timing mismatch
+Heavy browser usage	Bad scalability
+Cannot persist alerts	No central system
+Easy to manipulate	Security issue
+
+
+| Type                         | Purpose                        | Real-time? | Uses Socket? | Uses Route? |
+| ---------------------------- | ------------------------------ | ---------- | ------------ | ----------- |
+| Live anomaly detection       | Detect current spike instantly | ✅ Yes      | ✅ Yes        | ❌ No        |
+| Historical anomaly detection | Analyze stored DB data         | ❌ No       | ❌ No         | ✅ Yes       |

@@ -112,6 +112,11 @@ DB connections
 
 👉 GC will NOT fix it.
 
+npm i recharts ==> for charts
+
+
+
+
 
 
 

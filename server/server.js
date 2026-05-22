@@ -8,11 +8,14 @@ const si = require("systeminformation");
 const os = require("os");
 const Metrics = require("./Models/metrics");
 const metricRoutes = require("./Routes/metricRoutes");
-
+const {
+  detectAnomaly,
+  getAnomalyData,
+} = require("./Services/anomalyService");
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/',metricRoutes);
+app.use('/', metricRoutes);
 
 /* ===========================
    ✅ MONGODB CONNECTION
@@ -166,6 +169,9 @@ io.on("connection", (socket) => {
 
       /* ===== SEND TO CLIENT ===== */
       socket.emit("metrics", data);
+      const anomalyResult = await getAnomalyData();
+
+      socket.emit("anomaly", anomalyResult);
       console.log("📡 Sent:", data);
 
       /* ===== MEMORY MONITOR ===== */
@@ -200,7 +206,7 @@ io.on("connection", (socket) => {
 /* ===========================
    ✅ SYSTEM DETAILS API
 =========================== */
-app.get("/details", (req, res) => {
+app.get("/systemInformation", (req, res) => {
   res.json({
     type: os.type(),
     hostname: os.hostname(),

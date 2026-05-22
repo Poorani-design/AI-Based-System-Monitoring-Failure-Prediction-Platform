@@ -7,7 +7,7 @@ exports.getMetrics = async (req, res) => {
 
   const data = await Metrics.find({
     timestamp: { $gte: oneHourAgo },
-  }).sort({ timestamp: 1 });
+  }).sort({ timestamp: 1 }).limit(50);
   res.json(data);
 };
 
@@ -16,7 +16,7 @@ exports.cpuAlerts = async (req, res) => {
     cpu: { $gt: 85 },
   })
     .sort({ timestamp: -1 })
-    .limit(20);
+    .limit(25);
   res.json(alerts);
 };
 
@@ -25,6 +25,28 @@ exports.cpuCriticalAlerts = async (req, res) => {
     cpu: { $gt: 99 },
   })
     .sort({ timestamp: -1 })
-    .limit(20);
+    .limit(25);
   res.json(critical);
+};
+
+
+const {
+  detectAnomaly,
+} = require("../Services/anomalyService");
+
+exports.anomaly = async (req, res) => {
+  try {
+    const data = await Metrics.find({})
+      .sort({ timestamp: -1 })
+      .limit(100);
+
+    const result = detectAnomaly(data);
+    res.json(result);
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Anomaly detection failed",
+      error: error.message,
+    });
+  }
 };
